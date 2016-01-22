@@ -1,0 +1,13 @@
+# 
+# Definition of all trackable objects
+# Identifier corresponds to Trackable ID set in Tracking Tools
+#
+rigid_bodies:
+    '1':
+        frame_id: /calibration_block
+    '2':
+        frame_id: /observer
+    '3':
+        frame_id: /picket_1
+    '4':
+        frame_id: /picket_2

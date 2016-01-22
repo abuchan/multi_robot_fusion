@@ -1,0 +1,12 @@
+<launch>
+  <arg name="mname" default="odroid4" />
+  <arg name="number" default="1" />
+  <arg name="robot" default="picket_$(arg number)" />
+
+  <include file="$(find odroid_machine)/launch/odroid_machine.launch">
+    <arg name="mname" value="$(arg mname)" />
+  </include>
+  
+  <node machine="$(arg mname)" ns="$(arg robot)" name="zumy_ros_bridge" pkg="ros_zumy" type="zumy_ros_bridge.py"  output="screen" />
+
+</launch>
