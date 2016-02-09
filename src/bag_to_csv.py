@@ -49,7 +49,7 @@ def tf_to_csv(tf_entry):
     ori = tf_tr.rotation
     entries.append([
       timestamp.to_sec()-start_time, base_frame, child_frame,
-      pos.x, pos.y, pos.z, ori.x, ori.y, ori.z, ori.z
+      pos.x, pos.y, pos.z, ori.x, ori.y, ori.z, ori.w
     ])
 
   return entries
