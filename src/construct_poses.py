@@ -40,7 +40,7 @@ def load_poses(data_dir=default_data, filter_str = 'tf-*', static_tf=default_sta
       'pose': pose_data
     })
  
-  if filter_str is 'tf-*':
+  if filter_str == 'tf-*':
     static_file = open(static_tf)
     static_transforms = yaml.load(static_file)['transforms']
     static_file.close()

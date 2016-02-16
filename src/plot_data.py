@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 from load_csv_data import *
+from tf.transformations import *
 
 def plot_trajectories(
   filenames=None, datas=None, names=None, 
@@ -39,6 +40,34 @@ def plot_trajectories(
   plt.xlabel('x (m)')
   plt.ylabel('y (m)')
   plt.colorbar(label='time (s)')
+
+  plt.show()
+
+def plot_time(
+  filenames=None, datas=None, names=None, 
+  is_2d=True, time_color=True, legend=True):
+
+  if filenames is not None:
+    datas = [csv_to_numpy(filename) for filename in filenames]
+    names = [filename.split('.')[-2] for filename in filenames]
+  
+  if datas is None:
+    datas = []
+
+  if names is None:
+    names = ['traj_%d' % i for i in range(len(datas))]
+
+  for data, name in zip(datas, names):
+    theta = [euler_from_quaternion(list(q))[2] for q in data[['qx','qy','qz','qw']]] 
+    plt.plot(data['time'], data['x'], label=name+'_x')
+    plt.plot(data['time'], data['y'], label=name+'_y')
+    plt.plot(data['time'], theta, label=name+'_theta')
+  
+  if legend:
+    plt.legend()
+
+  plt.grid(True)
+  plt.xlabel('time (s)')
 
   plt.show()
 

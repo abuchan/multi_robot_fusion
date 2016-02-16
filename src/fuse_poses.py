@@ -45,6 +45,7 @@ def fuse_poses(poses, parent, child, time_thresh=0.01):
     min_time = numpy.nanmin(curr_times)
 
     fuse_idxs = (curr_times - min_time) < time_thresh
+
     f_ps = in_poses[fuse_idxs]
     p_is = idxs[fuse_idxs]
     fused_pose.append(pose_average([f_p[p_i] for f_p,p_i in zip(f_ps,p_is)]))
