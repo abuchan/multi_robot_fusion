@@ -22,10 +22,10 @@ def tpq_to_matrix(tpq):
   H[:3,3] = numpy.array(tpq)[['x','y','z']].tolist()
   return H
 
-def load_poses(data_dir=default_data, static_tf=default_static):
+def load_poses(data_dir=default_data, filter_str = 'tf-*', static_tf=default_static):
   poses = []
   
-  tf_files = glob.glob(data_dir + '/tf-*.csv')
+  tf_files = glob.glob(data_dir + '/' + filter_str + '.csv')
   for tf_file in tf_files:
     data = csv_to_numpy(tf_file)
     # not sure why, but need to catch null shape arrays when there is only one entry
@@ -39,22 +39,23 @@ def load_poses(data_dir=default_data, static_tf=default_static):
       'time': data['time'],
       'pose': pose_data
     })
-  
-  static_file = open(static_tf)
-  static_transforms = yaml.load(static_file)['transforms']
-  static_file.close()
+ 
+  if filter_str is 'tf-*':
+    static_file = open(static_tf)
+    static_transforms = yaml.load(static_file)['transforms']
+    static_file.close()
 
-  for transform in static_transforms:
-    pos = [transform['transform']['translation'][n] for n in ['x','y','z']]
-    ori = [transform['transform']['rotation'][n] for n in ['x','y','z','w']]
-    H = quaternion_matrix(ori)
-    H[:3,3] = pos
-    poses.append({
-      'parent': transform['header']['frame_id'],
-      'child': transform['child_frame_id'],
-      'time': [numpy.nan],
-      'pose': [H]
-    })
+    for transform in static_transforms:
+      pos = [transform['transform']['translation'][n] for n in ['x','y','z']]
+      ori = [transform['transform']['rotation'][n] for n in ['x','y','z','w']]
+      H = quaternion_matrix(ori)
+      H[:3,3] = pos
+      poses.append({
+        'parent': transform['header']['frame_id'],
+        'child': transform['child_frame_id'],
+        'time': [numpy.nan],
+        'pose': [H]
+      })
 
   return poses
 
