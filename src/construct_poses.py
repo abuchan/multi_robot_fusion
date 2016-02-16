@@ -17,17 +17,6 @@ from load_csv_data import *
 default_data = mrf_dir + '/data'
 default_static = mrf_dir + '/config/static_tf.yml'
 
-def pose_average(positions, orientations):
-  mean_ori = numpy.array(orientations[0])
-  ori_count = 1.0
-  for ori in orientations[1:]:
-    ori = numpy.array(ori)
-    if mean_ori.dot(ori) < 0.0:
-      ori = -ori
-    mean_ori = quaternion_slerp(mean_ori, ori, ori_count/(ori_count+1.0))
-    ori_count += 1.0
-  return numpy.array(positions).mean(0), mean_ori
-
 def tpq_to_matrix(tpq):
   H = quaternion_matrix(numpy.array(tpq)[['qx','qy','qz','qw']].tolist())
   H[:3,3] = numpy.array(tpq)[['x','y','z']].tolist()
