@@ -72,8 +72,13 @@ def parse_optitrack(filename):
   lines = [[value.strip('\" ') for value in line.split(',')] for line in f.readlines()]
   f.close()
 
-left_ar_pos = (-0.04, -0.06, 0.05)
-right_ar_pos = (0.04, -0.06, 0.05)
+def pose_inverse(pos, ori):
+  inv_ori = quaternion_inverse(ori)
+  inv_pos = -quaternion_matrix(inv_ori)[:3,:3].dot(numpy.array(pos))
+  return inv_pos, inv_ori
+
+left_ar_pos = numpy.array((-0.04, -0.06, 0.05))
+right_ar_pos = numpy.array((0.04, -0.06, 0.05))
 
 picket_1_ar_ori = picket_ori_from_markers(picket_1_markers, 0, 3, 2, numpy.pi)
 
@@ -83,8 +88,18 @@ poses.transforms.append(pose_to_tf_msg(
 ))
 
 poses.transforms.append(pose_to_tf_msg(
+  'ar_marker_17', 'picket_1_obs_17',
+  *pose_inverse(left_ar_pos, picket_1_ar_ori)
+))
+
+poses.transforms.append(pose_to_tf_msg(
   'picket_1_exp','ar_marker_16_exp',
   right_ar_pos, picket_1_ar_ori
+))
+
+poses.transforms.append(pose_to_tf_msg(
+  'ar_marker_16','picket_1_obs_16',
+  *pose_inverse(right_ar_pos, picket_1_ar_ori)
 ))
 
 picket_2_ar_ori = picket_ori_from_markers(picket_2_markers, 1, 2, 0)
@@ -95,8 +110,18 @@ poses.transforms.append(pose_to_tf_msg(
 ))
 
 poses.transforms.append(pose_to_tf_msg(
+  'ar_marker_10','picket_2_obs_10',
+  *pose_inverse(left_ar_pos, picket_2_ar_ori)
+))
+
+poses.transforms.append(pose_to_tf_msg(
   'picket_2_exp', 'ar_marker_11_exp',
   right_ar_pos, picket_2_ar_ori
+))
+
+poses.transforms.append(pose_to_tf_msg(
+  'ar_marker_11','picket_2_obs_11',
+  *pose_inverse(right_ar_pos, picket_2_ar_ori)
 ))
 
 poses.transforms.append(pose_to_tf_msg(

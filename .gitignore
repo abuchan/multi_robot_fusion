@@ -3,3 +3,4 @@
 *.csv
 *.bag
 data/
+config/

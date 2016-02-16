@@ -114,7 +114,7 @@ def split_tf_file(filename):
   for line in lines[1:]:
     data = [s.strip(' \n/') for s in line.split(',')]
     base, child = data[1:3]
-    filename = 'tf_' + base + '_' + child + '.csv'
+    filename = 'tf-' + base + '-' + child + '.csv'
     if filename not in filenames.keys():
       filenames[filename] = open(filename, 'w')
       filenames[filename].write(', '.join(split_columns) + '\n')
