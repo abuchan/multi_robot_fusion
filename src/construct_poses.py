@@ -106,52 +106,53 @@ def construct_poses(poses, paths):
   results = []
 
   for path in pose_paths:
-    seq_idxs, flips = zip(*path)
-    seqs = [poses[si]['pose'] for si in seq_idxs]
-    for i, flip in zip(range(len(seqs)), flips):
-      if flip:
-        seqs[i] = [numpy.linalg.inv(pose) for pose in seqs[i]]
+    if len(path):
+      seq_idxs, flips = zip(*path)
+      seqs = [poses[si]['pose'] for si in seq_idxs]
+      for i, flip in zip(range(len(seqs)), flips):
+        if flip:
+          seqs[i] = [numpy.linalg.inv(pose) for pose in seqs[i]]
 
-    times = [poses[si]['time'] for si in seq_idxs]
-    lens = numpy.array([len(seq) for seq in seqs])
+      times = [poses[si]['time'] for si in seq_idxs]
+      lens = numpy.array([len(seq) for seq in seqs])
 
-    try:
-      min_next_time = numpy.nanmax([t[0] for t in times])
-    except RuntimeWarning:
-      pass
-    
-    pose_idxs = numpy.array([numpy.searchsorted(t,min_next_time)-1 for t in times])
-    pose_idxs[pose_idxs == -1] = 0
-    res_pose = [reduce(numpy.dot,[seq[pi] for seq,pi in zip(seqs,pose_idxs)])]
-    res_time = [min_next_time]
-
-    while any(pose_idxs + 1 < lens):
-      next_idxs = [min(pi+1,le-1) for pi,le in zip(pose_idxs,lens)]
-      next_times = numpy.array([t[i] for t,i in zip(times, next_idxs)])
-
-      min_next_time = numpy.nanmin(next_times[pose_idxs != lens-1])
-      pose_idxs[next_times == min_next_time] += 1 
+      try:
+        min_next_time = numpy.nanmax([t[0] for t in times])
+      except RuntimeWarning:
+        pass
       
-      res_pose.append(reduce(numpy.dot, [seq[pi] for seq,pi in zip(seqs,pose_idxs)]))
-      res_time.append(min_next_time)
+      pose_idxs = numpy.array([numpy.searchsorted(t,min_next_time)-1 for t in times])
+      pose_idxs[pose_idxs == -1] = 0
+      res_pose = [reduce(numpy.dot,[seq[pi] for seq,pi in zip(seqs,pose_idxs)])]
+      res_time = [min_next_time]
 
-    if flips[0]:
-      parent = poses[seq_idxs[0]]['child']
-    else:
-      parent = poses[seq_idxs[0]]['parent']
-    
-    if flips[-1]:
-      child = poses[seq_idxs[-1]]['parent']
-    else:
-      child = poses[seq_idxs[-1]]['child']
+      while any(pose_idxs + 1 < lens):
+        next_idxs = [min(pi+1,le-1) for pi,le in zip(pose_idxs,lens)]
+        next_times = numpy.array([t[i] for t,i in zip(times, next_idxs)])
 
-    results.append({
-      'parent':parent,
-      'child':child,
-      'time':numpy.array(res_time),
-      'pose':res_pose
-    })
-    print 'Calculated %d poses for %s to %s' % (len(res_pose),parent,child)
+        min_next_time = numpy.nanmin(next_times[pose_idxs != lens-1])
+        pose_idxs[next_times == min_next_time] += 1 
+        
+        res_pose.append(reduce(numpy.dot, [seq[pi] for seq,pi in zip(seqs,pose_idxs)]))
+        res_time.append(min_next_time)
+
+      if flips[0]:
+        parent = poses[seq_idxs[0]]['child']
+      else:
+        parent = poses[seq_idxs[0]]['parent']
+      
+      if flips[-1]:
+        child = poses[seq_idxs[-1]]['parent']
+      else:
+        child = poses[seq_idxs[-1]]['child']
+
+      results.append({
+        'parent':parent,
+        'child':child,
+        'time':numpy.array(res_time),
+        'pose':res_pose
+      })
+      print 'Calculated %d poses for %s to %s' % (len(res_pose),parent,child)
   
   return results
 
@@ -173,9 +174,18 @@ if __name__ == '__main__':
 
   paths = [
     ('observer_exp','picket_1_exp'),
-    ('observer_exp','picket_1_obs_16'), ('observer_exp','picket_1_obs_17'),
+    ('observer_exp','picket_1_obs_1'),
+    ('observer_exp','picket_1_obs_2'),
+    ('observer_exp','picket_1_obs_3'),
+    ('observer_exp','picket_1_obs_6'),
+    ('observer_exp','picket_1_obs_7'),
+
     ('observer_exp','picket_2_exp'),
-    ('observer_exp','picket_2_obs_10'), ('observer_exp','picket_2_obs_11')
+    ('observer_exp','picket_2_obs_4'),
+    ('observer_exp','picket_2_obs_5'),
+    ('observer_exp','picket_2_obs_9'),
+    ('observer_exp','picket_2_obs_8'),
+    ('observer_exp','picket_2_obs_11'),
   ]
   
   results = construct_poses(poses, paths)

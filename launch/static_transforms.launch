@@ -1,7 +1,13 @@
 <launch>
   <include file="$(find multi_robot_fusion)/launch/rviz.launch" />
   <param name="use_sim_time" value="true" />
-  <node pkg="rosbag" type="play" name="rosbag" args="--clock $(find multi_robot_fusion)/data/trial.bag" />
+  
+  <arg name="bagfile" default="$(find multi_robot_fusion)/data/trial.bag" />
+  <node pkg="rosbag" type="play" name="rosbag" args="--clock $(arg bagfile)" />
+
   <node pkg="multi_robot_fusion" type="publish_static_transforms.py" name="stp" />
-  <rosparam file="$(find multi_robot_fusion)/config/static_tf.yml" command="load" />
+
+  <arg name="staticfile" default="$(find multi_robot_fusion)/config/static_tf.yml" />
+
+  <rosparam file="$(arg staticfile)" command="load" />
 </launch>

@@ -67,25 +67,22 @@ def pose_inverse(pos, ori):
   inv_pos = -quaternion_matrix(inv_ori)[:3,:3].dot(numpy.array(pos))
   return inv_pos, inv_ori
 
-# Static poses from calibration frame to rigidly attached AR markers
-frame_marker_H = quaternion_matrix((0.0,0.0,0.0,1.0))
-frame_marker_H[:3,3] = (0.1673, 0.0, 0.0)
-frame_markers = [{
-  'parent': 'ar_marker_0',
-  'child': 'static_frame',
-  'time': [numpy.nan],
-  'pose': [frame_marker_H]
-}]
-
 def pose_to_avg_tf(pose):
   avg_tf = pose_average(pose['pose'])
   return [pose['parent'],pose['child'],avg_tf[:3,3],quaternion_from_matrix(avg_tf)]
 
+def flip_pose(pose):
+  return {
+    'parent': pose['child'],
+    'child': pose['parent'],
+    'pose': [numpy.linalg.inv(H) for H in pose['pose']],
+    'time': pose['time']
+  }
+
 def robot_calibration(cal_dir, optitrack_frame, marker_numbers=None, 
-  static_markers=frame_markers, camera=None):
+  static_tf=mrf_dir+'/config/calibration.yml', camera=None):
   
-  poses = load_poses(cal_dir, static_tf=None)
-  poses.extend(static_markers)
+  poses = load_poses(cal_dir, static_tf=static_tf)
   
   exp_frame = optitrack_frame + '_exp'
 
@@ -101,10 +98,16 @@ def robot_calibration(cal_dir, optitrack_frame, marker_numbers=None,
 
   marker_paths = [(exp_frame, 'ar_marker_%d' % mn) for mn in marker_numbers]
   
-  print marker_paths
+  print 'Marker paths:' + str(marker_paths)
 
   if camera is None:
     camera_paths = []
+  else:
+    camera_index = [p['parent'] for p in poses].index(camera)
+    poses[camera_index] = flip_pose(poses[camera_index])
+    camera_paths = [(exp_frame, camera)]
+
+  print 'Camera paths:' + str(camera_paths)
 
   static_tfs = []
 
@@ -118,17 +121,22 @@ def robot_calibration(cal_dir, optitrack_frame, marker_numbers=None,
 
   for sp in static_poses:
     avg_pose = pose_to_avg_tf(sp)
-    avg_pose[1] = avg_pose[1] + '_exp'
+    
+    if sp['child'] == camera:
+      avg_pose[1] = 'usb_cam'
+      static_tfs.append(avg_pose)  
+    else:
+      avg_pose[1] = avg_pose[1] + '_exp'
 
-    static_tfs.append(avg_pose)
+      static_tfs.append(avg_pose)
 
-    marker = sp['child']
-    obs_pose = (
-      (marker, optitrack_frame + '_obs_' + marker.split('_')[-1]) + 
-      pose_inverse(*avg_pose[2:])
-    )
+      marker = sp['child']
+      obs_pose = (
+        (marker, optitrack_frame + '_obs_' + marker.split('_')[-1]) + 
+        pose_inverse(*avg_pose[2:])
+      )
 
-    static_tfs.append(obs_pose)
+      static_tfs.append(obs_pose)
 
   return static_tfs
   
@@ -140,11 +148,11 @@ if __name__ == '__main__':
   ))
 
   static_transforms.extend(robot_calibration(
-    mrf_dir + '/data/calibration/picket_2', 'picket_2'
+    mrf_dir + '/data/calibration/picket_2', 'picket_2', [4,5,9,8,11]
   ))
 
   static_transforms.extend(robot_calibration(
-    mrf_dir + '/data/calibration/observer', 'observer', camera=None
+    mrf_dir + '/data/calibration/observer', 'observer', camera='observer'
   ))
 
   poses = TFMessage()

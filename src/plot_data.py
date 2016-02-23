@@ -5,7 +5,7 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib
 
-from load_csv_data import *
+from multi_robot_fusion.src.load_csv_data import *
 from tf.transformations import *
 
 def plot_trajectories(
@@ -45,7 +45,7 @@ def plot_trajectories(
 
 def plot_time(
   filenames=None, datas=None, names=None, 
-  is_2d=True, time_color=True, legend=True):
+  is_2d=True, time_color=True, legend=True, show=True):
 
   if filenames is not None:
     datas = [csv_to_numpy(filename) for filename in filenames]
@@ -69,8 +69,14 @@ def plot_time(
   plt.grid(True)
   plt.xlabel('time (s)')
 
-  plt.show()
+  if show:
+    plt.show()
 
 if __name__ == '__main__':
-  plot_trajectories(sys.argv[1:])
+  #plot_trajectories(sys.argv[1:])
+  plt.figure(1)
+  plot_time(['../data/tf-observer_exp-picket_1_exp.csv','../data/tf-observer_exp-picket_1_obs_avg.csv'],show=False)
+  plt.figure(2)
+  plot_time(['../data/tf-observer_exp-picket_2_exp.csv','../data/tf-observer_exp-picket_2_obs_avg.csv'],show=False)
+  plt.show()
 
