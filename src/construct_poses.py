@@ -7,13 +7,10 @@ import yaml
 from tf.transformations import *
 import collections
 
+from multi_robot_fusion.src.load_csv_data import *
+
 rospack = rospkg.RosPack()
 mrf_dir = rospack.get_path('multi_robot_fusion')
-
-sys.path.append(mrf_dir + '/src')
-
-from load_csv_data import *
-
 default_data = mrf_dir + '/data'
 default_static = mrf_dir + '/config/static_tf.yml'
 
@@ -40,7 +37,7 @@ def load_poses(data_dir=default_data, filter_str = 'tf-*', static_tf=default_sta
       'pose': pose_data
     })
  
-  if filter_str == 'tf-*':
+  if static_tf is not None:
     static_file = open(static_tf)
     static_transforms = yaml.load(static_file)['transforms']
     static_file.close()

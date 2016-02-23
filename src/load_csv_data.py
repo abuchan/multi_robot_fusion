@@ -11,11 +11,13 @@ def load_csv_data(path='.',filename=None):
     files = [filename]
   else:
     files = glob.glob(path + '/*.csv')
-  
+
+  print "Loading data from " + str(files)
+
   data = {}
-  for filename in files:
-    series = filename.split('.')[-2].split('/')[-1]
-    data[series] = csv_to_numpy(filename)
+  for f in files:
+    series = f.split('.')[-2].split('/')[-1]
+    data[series] = csv_to_numpy(f)
  
   if filename is not None:
     return data.values()[0]

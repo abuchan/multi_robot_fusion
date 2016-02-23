@@ -9,6 +9,9 @@ from geometry_msgs.msg import TransformStamped, Quaternion, Vector3
 from tf2_msgs.msg import TFMessage
 import yaml
 
+from multi_robot_fusion.src.construct_poses import *
+from multi_robot_fusion.src.fuse_poses import *
+
 def ori_from_zx(z_axis, x_axis):
   z_axis = numpy.array(z_axis)
   z_axis = z_axis/(sum(z_axis**2.0)**0.5)
@@ -46,26 +49,13 @@ def picket_ori_from_markers(markers, tl_idx, tr_idx, bl_idx, z_angle = 0.0, up_a
   x_quat = quaternion_about_axis(angle, (1,0,0))
   return quaternion_multiply(x_quat, z_quat)
 
-def pose_to_tf_msg(parent, child, pos, ori):
+def pose_to_tf_msg(parent, child, position, orientation):
   ts = TransformStamped()
   ts.header.frame_id = parent
   ts.child_frame_id = child
-  ts.transform.rotation = Quaternion(*ori)
-  ts.transform.translation = Vector3(*pos)
+  ts.transform.rotation = Quaternion(*orientation)
+  ts.transform.translation = Vector3(*position)
   return ts
-
-observer_exp_usb_cam_ori = quaternion_about_axis(-1.55, (1,0,0))
-observer_exp_usb_cam_pos = (0.0,-0.02,0.12)
-
-poses = TFMessage()
-poses.transforms.append(pose_to_tf_msg(
-  'observer_exp', 'usb_cam',
-  observer_exp_usb_cam_pos, observer_exp_usb_cam_ori
-))
-
-# From TrackingData 2016-01-22 2.48pm.csv
-picket_1_markers = numpy.array([-0.06380191, 0.02113091, 0.0234817, 0.03571201, 0.01110142, -0.08322999, -0.06455258, -0.05244154, 0.03752184, 0.09264249, 0.02020924, 0.02222648]).reshape(4,3).T
-picket_2_markers = numpy.array([-0.06421539, -0.05119627, 0.01091343, -0.05635554, 0.02373023, -0.00827247, 0.08175805, 0.02328915, 0.06975526, 0.03881291, 0.00417688, -0.07239634]).reshape(4,3).T
 
 def parse_optitrack(filename):
   f = open(filename)
@@ -77,75 +67,89 @@ def pose_inverse(pos, ori):
   inv_pos = -quaternion_matrix(inv_ori)[:3,:3].dot(numpy.array(pos))
   return inv_pos, inv_ori
 
-left_ar_pos = numpy.array((-0.04, -0.06, 0.05))
-right_ar_pos = numpy.array((0.04, -0.06, 0.05))
+# Static poses from calibration frame to rigidly attached AR markers
+frame_marker_H = quaternion_matrix((0.0,0.0,0.0,1.0))
+frame_marker_H[:3,3] = (0.1673, 0.0, 0.0)
+frame_markers = [{
+  'parent': 'ar_marker_0',
+  'child': 'static_frame',
+  'time': [numpy.nan],
+  'pose': [frame_marker_H]
+}]
 
-picket_1_ar_ori = picket_ori_from_markers(picket_1_markers, 0, 3, 2, numpy.pi)
+def pose_to_avg_tf(pose):
+  avg_tf = pose_average(pose['pose'])
+  return [pose['parent'],pose['child'],avg_tf[:3,3],quaternion_from_matrix(avg_tf)]
 
-poses.transforms.append(pose_to_tf_msg(
-  'picket_1_exp', 'ar_marker_17_exp',
-  left_ar_pos, picket_1_ar_ori
-))
+def robot_calibration(cal_dir, optitrack_frame, marker_numbers=None, 
+  static_markers=frame_markers, camera=None):
+  
+  poses = load_poses(cal_dir, static_tf=None)
+  poses.extend(static_markers)
+  
+  exp_frame = optitrack_frame + '_exp'
 
-poses.transforms.append(pose_to_tf_msg(
-  'ar_marker_17', 'picket_1_obs_17',
-  *pose_inverse(left_ar_pos, picket_1_ar_ori)
-))
+  poses.append({
+    'parent': 'static_frame',
+    'child': exp_frame,
+    'time': [numpy.nan],
+    'pose': [numpy.eye(4)]
+  })
 
-poses.transforms.append(pose_to_tf_msg(
-  'picket_1_exp','ar_marker_16_exp',
-  right_ar_pos, picket_1_ar_ori
-))
+  if marker_numbers is None:
+    marker_numbers = []
 
-poses.transforms.append(pose_to_tf_msg(
-  'ar_marker_16','picket_1_obs_16',
-  *pose_inverse(right_ar_pos, picket_1_ar_ori)
-))
+  marker_paths = [(exp_frame, 'ar_marker_%d' % mn) for mn in marker_numbers]
+  
+  print marker_paths
 
-picket_2_ar_ori = picket_ori_from_markers(picket_2_markers, 1, 2, 0)
+  if camera is None:
+    camera_paths = []
 
-poses.transforms.append(pose_to_tf_msg(
-  'picket_2_exp', 'ar_marker_10_exp',
-  left_ar_pos, picket_2_ar_ori
-))
+  static_tfs = []
 
-poses.transforms.append(pose_to_tf_msg(
-  'ar_marker_10','picket_2_obs_10',
-  *pose_inverse(left_ar_pos, picket_2_ar_ori)
-))
+  static_poses = construct_poses(poses, marker_paths + camera_paths)
+  
+  # Correct Optitrack frame rotation to get expected frame of robot
+  static_tfs.append((
+    optitrack_frame, exp_frame,
+    (0.0, 0.0, 0.0),quaternion_about_axis(numpy.pi/2,(1,0,0))
+  ))
 
-poses.transforms.append(pose_to_tf_msg(
-  'picket_2_exp', 'ar_marker_11_exp',
-  right_ar_pos, picket_2_ar_ori
-))
+  for sp in static_poses:
+    avg_pose = pose_to_avg_tf(sp)
+    avg_pose[1] = avg_pose[1] + '_exp'
 
-poses.transforms.append(pose_to_tf_msg(
-  'ar_marker_11','picket_2_obs_11',
-  *pose_inverse(right_ar_pos, picket_2_ar_ori)
-))
+    static_tfs.append(avg_pose)
 
-poses.transforms.append(pose_to_tf_msg(
-  'world', 'odom',
-  (0,0,0),(0,0,0,1)
-))
+    marker = sp['child']
+    obs_pose = (
+      (marker, optitrack_frame + '_obs_' + marker.split('_')[-1]) + 
+      pose_inverse(*avg_pose[2:])
+    )
 
-poses.transforms.append(pose_to_tf_msg(
-  'picket_1', 'picket_1_exp',
-  (0.02,0.0,-0.090358632808888978),quaternion_about_axis(-0.025,(0,0,1))
-  #(0.01564444,0,-0.090358632808888978),quaternion_about_axis(-0.025,(0,0,1))
-))
+    static_tfs.append(obs_pose)
 
-poses.transforms.append(pose_to_tf_msg(
-  'picket_2', 'picket_2_exp',
-  (0.03,-0.03,-0.092169086757290727),quaternion_about_axis(-0.5,(0,0,1))
-  #(0.02,-0.02,-0.092169086757290727),quaternion_about_axis(-0.45,(0,0,1))
-))
+  return static_tfs
+  
+if __name__ == '__main__':
+  static_transforms = []
+  
+  static_transforms.extend(robot_calibration(
+    mrf_dir + '/data/calibration/picket_1', 'picket_1', [1,2,3,6,7]
+  ))
 
-poses.transforms.append(pose_to_tf_msg(
-  'observer', 'observer_exp',
-  (0.02,0,-0.12055603725444798),quaternion_about_axis(-0.15,(0,0,1))
-))
+  static_transforms.extend(robot_calibration(
+    mrf_dir + '/data/calibration/picket_2', 'picket_2'
+  ))
 
-f = open('static_tf.yml','w')
-f.write(str(poses))
-f.close()
+  static_transforms.extend(robot_calibration(
+    mrf_dir + '/data/calibration/observer', 'observer', camera=None
+  ))
+
+  poses = TFMessage()
+  poses.transforms.extend([pose_to_tf_msg(*pose) for pose in static_transforms])
+
+  f = open(mrf_dir + '/config/static_tf.yml','w')
+  f.write(str(poses))
+  f.close()

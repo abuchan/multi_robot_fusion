@@ -7,13 +7,8 @@ import yaml
 from tf.transformations import *
 import collections
 
-rospack = rospkg.RosPack()
-mrf_dir = rospack.get_path('multi_robot_fusion')
-
-sys.path.append(mrf_dir + '/src')
-
-from load_csv_data import *
-from construct_poses import *
+from multi_robot_fusion.src.load_csv_data import *
+from multi_robot_fusion.src.construct_poses import *
 
 def pose_average(poses):
   positions = [H[:3,3] for H in poses]
@@ -60,8 +55,8 @@ def fuse_poses(poses, parent, child, time_thresh=0.01):
   }
   
 if __name__ == '__main__':
-  p1_obs = load_poses(filter_str = 'tf-observer_exp-picket_1_obs_*')
-  p2_obs = load_poses(filter_str = 'tf-observer_exp-picket_2_obs_*')
+  p1_obs = load_poses(filter_str = 'tf-observer_exp-picket_1_obs_*',static_tf=None)
+  p2_obs = load_poses(filter_str = 'tf-observer_exp-picket_2_obs_*',static_tf=None)
 
   p1_avg = fuse_poses(p1_obs, 'observer_exp', 'picket_1_obs_avg')
   p2_avg = fuse_poses(p2_obs, 'observer_exp', 'picket_2_obs_avg')
