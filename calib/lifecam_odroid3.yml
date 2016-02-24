@@ -1,0 +1,20 @@
+image_width: 640
+image_height: 480
+camera_name: lifecam_odroid3
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [687.4135366509597, 0, 321.6319843516362, 0, 686.6137749507376, 216.4273541141584, 0, 0, 1]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.05610534419604943, -0.3334197753291121, -0.000524709556864799, 0.005720595118618074, 0]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [666.5245361328125, 0, 325.1500176396585, 0, 0, 664.100830078125, 214.3438089374322, 0, 0, 0, 1, 0]

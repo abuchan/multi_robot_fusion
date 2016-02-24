@@ -2,4 +2,5 @@
 *.swp
 *.csv
 *.bag
+*.tgz
 config/static_tf.yml

@@ -1,0 +1,17 @@
+<launch>
+  <arg name="robot" default="odroid0" />
+  <arg name="camera" default="lifecam_$(arg robot)" />
+  <arg name="device" default="/dev/video0" />
+  
+  <include file="$(find multi_robot_fusion)/launch/webcam.launch">
+    <arg name="robot" value="$(arg robot)" />
+    <arg name="camera" value="$(arg camera)" />
+    <arg name="device" value="$(arg device)" />
+  </include>
+
+  <arg name="marker_size" default="8.0" />
+  <arg name="max_new_marker_error" default="0.08" />
+  <arg name="max_track_error" default="0.2" />
+
+  <node ns="$(arg robot)" name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) /$(arg robot)/$(arg camera)/image_raw /$(arg robot)/$(arg camera)/camera_info $(arg camera)" />
+</launch>
