@@ -5,6 +5,7 @@
 	respawn="false"
 	launch-prefix=""
 	required="true">
+        <!-- output="screen" -->
     <rosparam file="$(find multi_robot_fusion)/config/mocap.yaml" command="load" />
   </node>
 </launch>
