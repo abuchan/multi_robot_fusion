@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from geometry_msgs.msg import TransformStamped, Quaternion, Vector3
 from tf2_msgs.msg import TFMessage
 import yaml
+import copy
 
 from multi_robot_fusion.src.construct_poses import *
 from multi_robot_fusion.src.fuse_poses import *
@@ -123,7 +124,7 @@ def robot_calibration(cal_dir, optitrack_frame, marker_numbers=None,
     avg_pose = pose_to_avg_tf(sp)
     
     if sp['child'] == camera:
-      avg_pose[1] = 'usb_cam'
+      avg_pose[1] = camera
       static_tfs.append(avg_pose)  
     else:
       avg_pose[1] = avg_pose[1] + '_exp'
@@ -151,9 +152,15 @@ if __name__ == '__main__':
     mrf_dir + '/data/calibration/picket_2', 'picket_2', [4,5,9,8,11]
   ))
 
-  static_transforms.extend(robot_calibration(
-    mrf_dir + '/data/calibration/observer', 'observer', camera='observer'
-  ))
+  camera_calibration = robot_calibration(
+    mrf_dir + '/data/calibration/observer', 'observer', camera='lifecam_odroid6'
+  )
+ 
+  usb_cam_calibration = copy.deepcopy(camera_calibration[-1])
+  usb_cam_calibration[1] = 'usb_cam'
+  camera_calibration.append(usb_cam_calibration)
+  static_transforms.extend(camera_calibration)
+  print camera_calibration
 
   poses = TFMessage()
   poses.transforms.extend([pose_to_tf_msg(*pose) for pose in static_transforms])
