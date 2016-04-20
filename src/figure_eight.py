@@ -1,12 +1,15 @@
 #!/usr/bin/python
 
 import numpy
-# from scipy.special import jn_zeros
+from scipy.special import jn_zeros
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import scipy.signal
 
-def update(state,u,dt,arc=True):
+def update(state,u,dt,noise=[0.0005,0.0005,0.01],arc=True):
   v,a = u
+  #v *= (1+numpy.random.normal(scale=noise[0]))
+  #a *= (1+numpy.random.normal(scale=noise[1]))
   _,_,theta = state
   rotation = numpy.array(
     [[numpy.cos(theta), -numpy.sin(theta)],
@@ -24,7 +27,13 @@ def update(state,u,dt,arc=True):
   
   delta[0:2] = rotation.dot(delta[0:2])
   
-  return state + delta
+  ret_state = state + delta
+  
+  if noise is not None:
+    for i in range(len(noise)):
+      ret_state[i] += numpy.random.normal(scale=noise[i])
+  
+  return ret_state
 
 # control - function that takes a state vector and produces a linear/angular velocity command
 # t - final time
@@ -42,13 +51,13 @@ def trajectory(control, s0=[0,0,0], t=60.0, dt=0.01, arc=True):
 
   for i in range(1,len(t)):
     u[i-1] = control(state[i-1],t[i-1])[0]
-    state[i] = update(state[i-1],u[i-1],dt,arc)
+    state[i] = update(state[i-1],u[i-1],dt,arc=arc)
 
   return state, u, t
 
 def sine_angular_control(s, t, v=1.0):
   # Amplitude is the first root of the 0-th order Bessel function
-  # A = jn_zeros(0,1)[0]
+  A = jn_zeros(0,1)[0]
 
   v = v*numpy.ones(t.shape)
   a = A*numpy.sin(t)
@@ -77,12 +86,12 @@ def attractor_control(s, t, v=1.0):
   return numpy.vstack([v,a]).T
 
 # s is [x,y,theta], w is lemniscate width, v is desired velocity on lemniscate
-def lemniscate_vector(state, w=0.5):
+def lemniscate_vector(state, width=0.5):
   x,y,theta = state
 
   # radius squared, width squared
   r2 = x**2 + y**2
-  w2 = w**2
+  w2 = width**2
 
   # gradient vector towards lemniscate trajectory, normalized to have max val of 1 at foci
   down = -1.0/(w2**2)*(r2**2 - w2*(x**2-y**2)) * numpy.array([2*r2*x - w2*x, 2*r2*y + w2*y])
@@ -122,7 +131,7 @@ def lemniscate_vector(state, w=0.5):
     around = ((cr2*w2-r2)/(cr2*w2) * center) + (r2/(cr2*w2) * around)
 
   # return weighted sum of gradient descent and rotational vector
-  return around + 10*down
+  return around + 5*down
 
 def threshold_gain(x, gain=1.0, bounds=[-numpy.inf,numpy.inf], offset=0.0):
   val = gain*(x-offset)
@@ -134,9 +143,9 @@ def threshold_gain(x, gain=1.0, bounds=[-numpy.inf,numpy.inf], offset=0.0):
 
   return val 
 
-def lemniscate_control(s, t, bounds=[-3.0,3.0], v=0.1, w=.40):
-  vector = lemniscate_vector(s,w)
-  _,_,theta = s
+def lemniscate_control(state, t=0, velocity=0.1, width=0.5, a_gain=10.0, a_bounds=[-3.0,3.0]):
+  vector = lemniscate_vector(state,width)
+  _,_,theta = state
   theta_vf = numpy.arctan2(vector[1],vector[0])
   
   theta_diff = (theta_vf - theta) % (2*numpy.pi)
@@ -145,17 +154,34 @@ def lemniscate_control(s, t, bounds=[-3.0,3.0], v=0.1, w=.40):
 
   v_cmd = threshold_gain(
     (sum(vector**2)**0.5)*numpy.cos(theta_diff),
-    gain=v,bounds=[0.0,2*v]
+    gain=velocity,bounds=[0.0,2*velocity]
   )
   
-  a_cmd = threshold_gain(theta_diff,gain=10,bounds=bounds)
+  a_cmd = threshold_gain(theta_diff,gain=a_gain,bounds=a_bounds)
  
-  return numpy.vstack([v_cmd,a_cmd])
+  return numpy.vstack([v_cmd,a_cmd]).T
 
-def plot_lemniscate(w=1.0,nt=200, ax_in=None):
+class FilteredController():
+  def __init__(self, filter_args, control_function, control_args):
+    self.ba = scipy.signal.butter(**filter_args)
+    self.v_zi = numpy.zeros(filter_args['N'])
+    self.a_zi = numpy.zeros(filter_args['N'])
+    self.controller = lambda s,t : control_function(s,t,**control_args)
+
+  def control(self, state, t):
+    v_cmd,a_cmd = self.controller(state,t)[0]
+    #self.v_zi = numpy.hstack([self.v_zi[1:],v_cmd])
+    #self.a_zi = numpy.hstack([self.a_zi[1:],a_cmd])
+    #v_o = self.v_zi.mean()
+    #a_o = self.a_zi.mean()
+    v_o,self.v_zi= scipy.signal.lfilter(*self.ba,x=[v_cmd],zi=self.v_zi)
+    a_o,self.a_zi= scipy.signal.lfilter(*self.ba,x=[a_cmd],zi=self.a_zi)
+    return numpy.vstack([v_o,a_o]).T
+
+def plot_lemniscate(width=0.5,nt=200, ax_in=None):
   t = numpy.linspace(0,2*numpy.pi,nt)
-  x = w*numpy.cos(t)/(1+numpy.sin(t)**2)
-  y = w*numpy.sin(t)*numpy.cos(t)/(1+numpy.sin(t)**2)
+  x = width*numpy.cos(t)/(1+numpy.sin(t)**2)
+  y = width*numpy.sin(t)*numpy.cos(t)/(1+numpy.sin(t)**2)
   
   if ax_in is None:
     ax = plt.gca()
@@ -190,7 +216,7 @@ def plot_trajectory(state, is_2d=True, ax_in=None):
   plt.grid(True)
   
   if ax_in is None:
-    plt.pause(1)
+    plt.show()
 
 def plot_time_trajectory(t, state, u=None):
   plt.plot(t,state[:,0],label='x')
@@ -245,8 +271,8 @@ def plot_vector_control(vector_function, state, ax_in=None):
   if ax_in is None:
     plt.show()
 
-# v - average velocity of the robot on the trajectory in m/s
-# w - width of the lemniscate trajectory in m
+# velocity - average velocity of the robot on the trajectory in m/s
+# width - width of the lemniscate trajectory in m
 # s0 - initial condition of robot as  [x,y,theta] in m,m,rad
 # t - simulation time in seconds
 # dt - time step
@@ -255,17 +281,17 @@ def plot_vector_control(vector_function, state, ax_in=None):
 # step - delta between quiver plot points
 # theta - static theta used to render quiver plot
 # ax_in - axes on which to plot graph
-def plot_all(v=0.1,w=0.5,s0=[0.0,0.0,0.0],t=60.0,dt=0.01,bounds=None, step=None,theta=0.0,ax_in=None):
+def plot_all(velocity=0.1,width=0.5,s0=[0.0,0.0,0.0],t=60.0,dt=0.01,bounds=None, step=None,theta=0.0,ax_in=None):
   if ax_in is None:
     ax = plt.gca()
   else:
     ax = ax_in
   
-  lc = lambda s,t: lemniscate_control(s,t,v=v,w=w)
+  lc = lambda s,t: lemniscate_control(s,t,velocity=velocity,width=width)
 
   state, u, t = trajectory(lc,s0=s0,t=t,dt=dt)
   ax = plt.gca()
-  plot_lemniscate(w=w,ax_in=ax)
+  plot_lemniscate(width=width,ax_in=ax)
 
   if bounds is None:
     mins,maxs = state.min(0),state.max(0)
@@ -279,7 +305,7 @@ def plot_all(v=0.1,w=0.5,s0=[0.0,0.0,0.0],t=60.0,dt=0.01,bounds=None, step=None,
     min_range = min(bounds[0][1]-bounds[0][0],bounds[1][1]-bounds[1][0])
     step = min_range/50.0
   
-  lv = lambda s: lemniscate_vector(s,w=w)
+  lv = lambda s: lemniscate_vector(s,width=width)
   
   plot_vector(lv, bounds, step, theta, ax_in=ax)
   
@@ -289,12 +315,11 @@ def plot_all(v=0.1,w=0.5,s0=[0.0,0.0,0.0],t=60.0,dt=0.01,bounds=None, step=None,
   
   ax.axis([bounds[0][0],bounds[0][1],bounds[1][0],bounds[1][1]])
 
-  plt.title('s0=%s, v=%f, w=%f' % (str(s0),v,w))
+  plt.title('s0=%s, v=%f, w=%f' % (str(s0),velocity,width))
 
   if ax_in is None:
     plt.show()
 
 if __name__ == '__main__':
-  state, u, t = trajectory(lemniscate_control)
-  # plot_trajectory(u)
+  plot_trajectory(trajectory(sine_angular_control))
 
