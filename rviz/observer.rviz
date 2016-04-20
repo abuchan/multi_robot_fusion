@@ -29,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Camera
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -56,27 +56,9 @@ Visualization Manager:
       Frame Timeout: 1
       Frames:
         All Enabled: true
-        ar_marker_0:
+        observer:
           Value: true
-        ar_marker_10:
-          Value: true
-        ar_marker_11:
-          Value: true
-        ar_marker_13:
-          Value: true
-        ar_marker_14:
-          Value: true
-        ar_marker_16:
-          Value: true
-        ar_marker_17:
-          Value: true
-        ar_marker_2:
-          Value: true
-        ar_marker_24:
-          Value: true
-        ar_marker_7:
-          Value: true
-        usb_cam:
+        odom:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -84,26 +66,8 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        usb_cam:
-          ar_marker_0:
-            {}
-          ar_marker_10:
-            {}
-          ar_marker_11:
-            {}
-          ar_marker_13:
-            {}
-          ar_marker_14:
-            {}
-          ar_marker_16:
-            {}
-          ar_marker_17:
-            {}
-          ar_marker_2:
-            {}
-          ar_marker_24:
-            {}
-          ar_marker_7:
+        odom:
+          observer:
             {}
       Update Interval: 0
       Value: true
@@ -124,7 +88,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: usb_cam
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:

@@ -4,10 +4,9 @@
 #
 rigid_bodies:
     '1':
-        frame_id: /calibration_block
-    '2':
         frame_id: /observer
-    '3':
+        pose2d: /observer/ground_pose
+    '2':
         frame_id: /picket_1
-    '4':
+    '3':
         frame_id: /picket_2

@@ -1,17 +1,20 @@
 <launch>
 
-  <include file="$(find multi_robot_fusion)/launch/joystick.launch" />
+  <!-- <include file="$(find multi_robot_fusion)/launch/joystick.launch" /> -->
 
-  <include file="$(find multi_robot_fusion)/launch/observer.launch" />
-  <include file="$(find multi_robot_fusion)/launch/picket.launch" />
+  <!-- <include file="$(find multi_robot_fusion)/launch/random_walk.launch" /> -->
 
-  <include file="$(find multi_robot_fusion)/launch/picket.launch" >
+  <!-- <include file="$(find multi_robot_fusion)/launch/observer.launch" /> --> 
+
+  <include file="$(find multi_robot_fusion)/launch/picket.launch" /> 
+
+  <!-- <include file="$(find multi_robot_fusion)/launch/picket.launch" >
     <arg name="mname" value="odroid3" />
     <arg name="number" value="2" />
-  </include>
+  </include> -->
 
-  <include file="$(find multi_robot_fusion)/launch/mocap.launch" />
+  <!-- <include file="$(find multi_robot_fusion)/launch/mocap.launch" /> -->
 
-  <include file="$(find multi_robot_fusion)/launch/rviz.launch" />
+  <!-- <include file="$(find multi_robot_fusion)/launch/rviz.launch" /> -->
 
 </launch>
