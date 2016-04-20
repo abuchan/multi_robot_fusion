@@ -1,0 +1,8 @@
+<launch>
+
+  <include file="$(find multi_robot_fusion)/launch/observer.launch" /> 
+  
+  <include file="$(find multi_robot_fusion)/launch/mocap.launch" />
+
+  <node name="control" pkg="multi_robot_fusion" type="closed_loop_control.py" />`
+</launch>

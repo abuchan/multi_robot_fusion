@@ -8,5 +8,26 @@
   
   <node machine="$(arg mname)" ns="$(arg robot)" name="zumy_ros_bridge" pkg="ros_zumy" type="zumy_ros_bridge.py"  output="screen" />
 
+  <!-- need to decide between including ar_track.launch or writing out ar node stuff below
+  <arg name="camera" default="lifecam_$(arg mname)" />
+  <arg name="device" default="/dev/video0" />
+
+  <node machine="$(arg mname)" ns="$(arg robot)" name="$(arg camera)" pkg="usb_cam" type="usb_cam_node">
+    <param name="video_device" value="$(arg device)" />
+    <param name="image_width" value="640" />
+    <param name="image_height" value="480" />
+    <param name="pixel_format" value="mjpeg" />
+    <param name="camera_frame_id" value="$(arg camera)" />
+    <param name="camera_name" value="$(arg camera)" />
+    <param name="io_method" value="mmap" />
+    <param name="camera_info_url" value="package://multi_robot_fusion/calib/$(arg camera).yml" />
+  </node>
+
+  <arg name="marker_size" default="8.0" />
+  <arg name="max_new_marker_error" default="0.08" />
+  <arg name="max_track_error" default="0.2" />
+
+  <node machine="$(arg mname)" ns="$(arg robot)" name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) /$(arg robot)/$(arg camera)/image_raw /$(arg robot)/$(arg camera)/camera_info $(arg camera)" />
+  -->
 
 </launch>
