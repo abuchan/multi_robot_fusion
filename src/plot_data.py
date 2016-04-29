@@ -72,6 +72,16 @@ def plot_time(
   if show:
     plt.show()
 
+def plot_time_series(data, ax = None):
+  if ax is None:
+    ax = plt.gca()
+
+  t = data['time']
+
+  for series in data.dtype.names:
+    if series != 'time':
+      ax.plot(t, data[series], label=series)
+
 if __name__ == '__main__':
   #plot_trajectories(sys.argv[1:])
   plt.figure(1)
