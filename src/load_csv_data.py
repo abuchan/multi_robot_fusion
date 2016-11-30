@@ -7,7 +7,7 @@ def csv_to_numpy(filename):
   return numpy.genfromtxt(filename, dtype=float, delimiter=',', names=True)
 
 def numpy_to_csv(filename,data):
-  numpy.savetxt(filename,data,delimeter=', ',header=', '.join(data.dtype.names),comments='')
+  numpy.savetxt(filename,data,delimiter=', ',header=', '.join(data.dtype.names),comments='')
 
 def load_csv_data(path='.',filename=None):
   if filename is not None:
